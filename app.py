@@ -1,3 +1,4 @@
+from calendar import month
 from models import Base, session, Product, engine
 import csv
 from datetime import datetime
@@ -92,6 +93,27 @@ def clean_quantity(quantity):
     else:
         return cleaned_quantity
 
+def clean_date(date_str):
+    split_date = date_str.split('/')
+
+    try:
+        month = int(split_date[0])
+        day = int(split_date[1])
+        year = int(split_date[2])
+
+        cleaned_date = datetime.date(year, month, day)
+
+    except ValueError:
+        input('''
+        \n********** DATE ERROR **********
+        \rThe date format be Month/Day/Year.
+        \rFor example: 6/12/1990
+        \rPress enter to try again.
+        \r********************************''')
+        return
+    else:
+        return cleaned_date
+
 
 def add_csv():
     """
@@ -103,19 +125,19 @@ def add_csv():
         for row in data:
             price = price_cleaned(row['price_of_product'])
             quantity = int(row['product_quantity'])
-            updated = datetime.strptime(row['date_updated'], '%m/%d/%Y').date()
+            date = datetime.strptime(row['date_updated'], '%m/%d/%Y').date()
             product_db = session.query(Product).filter(Product.product_name == row['product_name']).one_or_none()
             if product_db == None:
                 new_product = Product(product_name=row['product_name'], price_of_product=price,
-                                      product_quantity=quantity, date_updated=updated)
+                                      product_quantity=quantity, date_updated=date)
                 session.add(new_product)
             else:
-                if product_db.date_updated > updated:
+                if product_db.date_updated > date:
                     continue
-                elif product_db.date_updated < updated:
+                elif product_db.date_updated < date:
                     product_db.price_of_product = price
                     product_db.product_quantity = quantity
-                    product_db.date_updated = updated
+                    product_db.date_updated = clean_date(row[3])
                     continue
     session.commit()
 
